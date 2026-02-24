@@ -64,7 +64,7 @@ Be sure that the title, x-axis, and y-axis labels are clearly labeled.
 **Answer 1:**
 
 ```{r}
-#library(tidyverse)
+library(tidyverse)
 sunapee|>
   ggplot(aes(x = year, y = ice_off_doy))+
   labs(title = "Ice Off Day by Year", x = "Year", y = "Ice Off Day of Year")+
@@ -156,7 +156,7 @@ Use the [`add_predictions()`](https://modelr.tidyverse.org/reference/add_predict
 **Answer 5:**
 
 ```{r}
-#library(modelr)
+library(modelr)
 sunapee_5 <- sunapee |>
   add_predictions(fit)|>
   add_residuals(fit)
@@ -170,10 +170,12 @@ Now, to visualize the residuals, use `geom_histogram()` to plot them as a histog
 Show Histogram and answer the following question: do the residuals meet the assumptions of the linear regression? (are the residuals normally distributed with the distribution centered around zero)?
 
 **Answer 6:**
-The residuals meet the assumptions of the linar regression and are normally distributed with the distribution roughly centered around zero. There is a left tail, however.
+The residuals meet the assumptions of the linear regression and are normally distributed with the distribution roughly centered around zero. There is a left tail, however.
 ```{r}
 ggplot(data = sunapee_5) +
   geom_histogram(aes(x = resid), bins = 10)
+
+summary(fit)
 ```
 
 
@@ -186,6 +188,7 @@ A slope could appear to be higher or lower than zero, but the uncertainty in the
 Based on the `summary()` above, what is the p-value for the slope?
 
 **Answer 7:**
+p value = 2.5e-09
 
 ## The slope physically meaningful
 
@@ -196,6 +199,8 @@ A slope value could have a low probability of being 0 (thus we have a strong bel
 Based on the slope value, how many more years are needed to pass before the lake has a 1 week change in ice off doy? Do you think this is meaningful? Why?
 
 **Answer 8:**
+ 
+The slope value is -0.10602, meaning it would take 66.025 years for the lake has a 1 week change in ice off doy. I think this is meaningful due to the slope's very low p-value which indicates that the slope is significant. This shows a clear trend towards an earlier ice off day each year.
 
 ## Overall model assessment
 
@@ -204,13 +209,19 @@ Based on the slope value, how many more years are needed to pass before the lake
 How comfortable are you proceeding with using this linear model for additional analysis and prediction? Why? (I am not looking for your gut answer, rather I want you to apply concepts taught in this module to justify your answer)
 
 **Answer 9:**
-
+I am comfortable with proceeding with this linear model due to the statistical significance of the variables and the consistent findings pointing towards an earlier ice off day as time progresses. Additionally, the normal distribution of the residuals indicates that no assumptions are violated.
 **Question 10:**
 Now plot the data for Lake Sunapee (just like above - year on x-axis vs. ice of doy on y axis) but add the line from your regression results (e.g., fit intercept and slope). You will use the [`geom_abline`](https://ggplot2.tidyverse.org/reference/geom_abline.html). 
 
 **Answer 10:**
 ```{r}
-
+sunapee|>
+  ggplot(aes(x = year, y = ice_off_doy))+
+  labs(title = "Ice Off Day by Year", x = "Year", y = "Ice Off Day of Year")+
+  geom_point()+
+  geom_line()+
+  geom_abline(intercept = coef(fit)[1], slope = coef(fit)[2], color = "green") +
+  theme_bw()
 ```
 
 **Question 11:**
@@ -223,9 +234,19 @@ The goal of this question is to make a forecast of the future ice-off day (with 
 - How wide is your confidence interval (number of days)?
 
 **Answer 11:**
+2040 Ice off prediction =  Day 102 (102.67)
+Width of confidence interval= 33.6 days
 
 ```{r}
+"2040_prediction" <- (318.94856 + (-0.10602*2040) )
 
+residuals <-as.numeric(residuals(fit))
+
+con_int<- quantile(residuals, probs = c(0.05, 0.95))
+
+"2040_low" <- (-19.4 + `2040_prediction`)
+"2040_high" <- (14.2 + `2040_prediction`)
+width <- (116.86776 - 83.26776)
 ```
 
 # Is the ice-off day of the year changing more quickly in more recent years at Lake Sunapee?
@@ -237,6 +258,32 @@ To answer this question, you need to divide the Sunapee dataset into two dataset
 Use the skills developed above to evaluate the question "Is the ice-off day of year changing more quickly in more recent years at Lake Sunapee?"
 
 **Answer 12:**
+Firstly, I used ggplot to compare the two datasets and their trends. From this, I saw a slightly steeper slope in the later dataset. To confirm this, I then made linear models of each dataset and analyzed their slopes. The earlier dataset has a slope of -0.10967 and the later has a slope of -0.30239, confirming the trend I saw. I then made a plot of the original data with the slope line of the pre-1970 datset in blue and post-1970 datset in red. Simply put, yes the ice off day of year is changing more quickly in more recent years at Lake Sunapee.
+
+```{r}
+sunapee_1 <- sunapee|>
+  filter(year <1970)
+
+sunapee_2 <- sunapee|>
+  filter(year >=1970)
+
+ggplot()+
+  geom_line(data = sunapee_1, aes(x = year, y = ice_off_doy), color = "blue") +
+  geom_line(data = sunapee_2, aes(x = year, y = ice_off_doy), color = "red") 
+
+lm_1 <- lm(ice_off_doy ~ year, data = sunapee_1)
+
+lm_2 <- lm(ice_off_doy ~ year, data = sunapee_2)
+
+#summary(lm_1)
+#summary(lm_2)
+
+ggplot()+
+  geom_point(data = sunapee_5, aes(x = year, y = ice_off_doy))+
+  geom_abline(intercept = coef(lm_1)[1], slope = coef(lm_1)[2], color = "blue") +
+  geom_abline(intercept = coef(lm_2)[1], slope = coef(lm_2)[2], color = "red") +
+  labs(title = "Slope Lines for Linear Models", x = "Year", y = "Ice Off Day")
+```
 
 Use a mix of code, figures, and text to present your analysis.  If you want to compare slopes, be sure they are on the same plot.
 
@@ -251,4 +298,10 @@ This module was initially developed as an Excel-based activity by Carey, C.C., J
 # Attribution
 
 Include citation of any AI-generated assistance or discussion with classmates (per policy in syllabus). Proper documentation of AI-generated assistance includes the prompt, the source (e.g., ChatGPT), and the significant parts of the response.  Proper documentation of discussion with classmates include listing their names and the components discussed.  
+
+Used for Question 10:
+
+Prompt: Now plot the data for Lake Sunapee (just like above - year on x-axis vs. ice of doy on y axis) but add the line from your regression results (e.g., fit intercept and slope). You will use the [geom_abline](https://ggplot2.tidyverse.org/reference/geom_abline.html).
+
+Used to understand the syntax of the geom_abline function
 
